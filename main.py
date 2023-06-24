@@ -1,11 +1,77 @@
-from  fastapi import FastAPI,HTTPException,status
-from models import Item,editItem
 from uuid import UUID
 from typing import List
+from  fastapi import FastAPI,HTTPException,status
+from models import Item,EditItem
+
+
 app=FastAPI()
 
-db:list[Item]=[
-    Item(
+def validate(one:str,two:str,flag:bool):
+    if len(one) !=0:
+        two=one
+        flag=True
+
+class Database():
+    """Database class."""
+    __db:List[Item]
+    def __init__(self,db_list:List[Item]) -> None:
+        self.__db=db_list
+
+    def get_all_db(self):
+        """get all items from db"""
+        return self.__db
+    
+    def get_specific_db(self,id:UUID):
+        """get specific item from db"""
+        for item in self.__db:
+            if item.id==id:
+                return item
+        raise HTTPException(
+        status_code=404,
+        detail=f"item with id: {id} does not exist"
+        )
+
+    def add_item_db(self,item:Item):
+        """add item to db"""
+        self.__db.append(item)
+        return item
+
+    def edit_item_db(self,id:UUID,new_item:EditItem):
+        """edit item in db"""
+        for item in self.__db:
+            if item.id==id:
+                flag=False
+                if len(new_item.name)!=0:
+                    item.name=new_item.name
+                    flag=True
+                if len(new_item.description)!=0:
+                    item.description=new_item.description
+                    flag=True
+                if flag is False:
+                    raise HTTPException(
+                    status_code=400,
+                    detail="empty"
+                    )
+
+                return item
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"item with id: {id} does not exist"
+        )
+
+    def delete_item_db(self,id:UUID):
+        """delete item from db"""
+        for count,value in enumerate(self.__db.copy()):
+            if value.id==id:
+                del self.__db[count]
+                return value
+        raise HTTPException(
+        status_code=404,
+        detail=f"item with id: {id} does not exist"
+        )
+
+data=Database([Item(
         id="61a0149c-f27e-4824-85cc-28e1610ef6d1",
         name="log1",
         description="desc1"
@@ -17,74 +83,30 @@ db:list[Item]=[
         name="log2",
         description="desc2"
 
-    )
- ]
+    )])
 
 @app.get("/items/")
-async def getAllDb():
-    return db
+async def get_all_items():
+    """call function to get all items from db"""
+    return data.get_all_db()
 
 @app.post("/item/",status_code=status.HTTP_201_CREATED)
-async def addItem(item:Item):
-    if  item.get("name") and item.get("description") is not None:
-        db.append(item)
-        return item
-        
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="пустое поле"
-        )
-    
+async def add_item(item:Item):
+    """call function to add new item in db"""
+    return data.add_item_db(item)
+
 @app.get("/item/{id}")
-async def getItem(id: UUID):
-    for item in db:
-        if item.id==id:
-            return item    
-    raise HTTPException(
-        status_code=404,
-        detail=f"поста с id: {id} не существует"
-        )
+async def get_item(id: UUID):
+    """call function to get specific item from db"""
+    return data.get_specific_db(id)
 
 
 @app.put("/item/{id}")
-async def changeItem(item:editItem,id:UUID):
-    for item_main in db:
-        if item_main.id==id:
-            flag=False
-            if item.id is not None:
-                item_main.id=item.id
-                flag=True
-            if item.name is not None:
-                item_main.name=item.name
-                flag=True
-            if item.description is not None:
-                item_main.description=item.description
-                flag=True
-            if(flag==False):    
-                raise HTTPException(
-                status_code=400,
-                detail="пустое поле"
-                )
-            else:
-                return item
-        
-    raise HTTPException(
-        status_code=404,
-        detail=f"поста с id: {id} не существует"
-    )        
-        
+async def edit_item(item:EditItem,id:UUID):
+    """call function to edit item in db"""
+    return data.edit_item_db(id,item)
 
-
-
-    
 @app.delete("/item/{id}")
-async def deleteItem(id:UUID):
-    for item in db:
-        if(item.id==id):
-            db.remove(item)
-            return item
-    raise HTTPException(
-        status_code=404,
-        detail=f"поста с id: {id} не существует"
-    )
+async def delete_item(id:UUID):
+    """call function to delete item from db"""
+    return data.delete_item_db(id)

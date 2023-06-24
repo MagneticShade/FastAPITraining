@@ -1,13 +1,17 @@
-from typing import Optional,Annotated
-from uuid import UUID,uuid4
+from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel
 
 class Item(BaseModel):
-    id:Optional[UUID]=uuid4()
+    """item class."""
+    id:UUID
     name:str
     description:str
 
-class editItem(BaseModel):
-    id:Optional[UUID]
+    
+
+class EditItem(BaseModel):
+    """edit item class."""
     name:Optional[str]
     description:Optional[str]
+    
