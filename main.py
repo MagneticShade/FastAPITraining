@@ -6,10 +6,6 @@ from models import Item,EditItem
 
 app=FastAPI()
 
-def validate(one:str,two:str,flag:bool):
-    if len(one) !=0:
-        two=one
-        flag=True
 
 class Database():
     """Database class."""
